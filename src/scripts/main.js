@@ -14,11 +14,12 @@ class Main extends AbstractApplication {
 
 		var material2 = new THREE.ShaderMaterial( {
 			vertexShader: shaderVert,
-			fragmentShader: shaderFrag
+			fragmentShader: shaderFrag,
 		} );
 
 
 		this._mesh = new THREE.Mesh( geometry, material2 );
+        this._mesh.position.set( 0, 0, - 300 );
 		this._scene.add( this._mesh );
 
 		this.animate();
