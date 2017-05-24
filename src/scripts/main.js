@@ -10,18 +10,40 @@ class Main extends AbstractApplication {
 
 		super();
 
-		var geometry = new THREE.BoxGeometry( 200, 200, 200 );
+		let geometry = new THREE.PlaneBufferGeometry( 2, 2 );
+		this.startTime = Date.now();
 
-		var material2 = new THREE.ShaderMaterial( {
+		let video = document.getElementById( 'video' );
+		let texture = new THREE.VideoTexture( video );
+
+		texture.minFilter = THREE.LinearFilter;
+		texture.magFilter = THREE.LinearFilter;
+		texture.format = THREE.RGBFormat;
+		this.uniforms.u_tex = { type: 't', value: texture };
+
+		let material = new THREE.ShaderMaterial( {
+			uniforms: this.uniforms,
 			vertexShader: shaderVert,
+
 			fragmentShader: shaderFrag,
 		} );
 
-
-		this._mesh = new THREE.Mesh( geometry, material2 );
-		this._scene.add( this._mesh );
+		this.mesh = new THREE.Mesh( geometry, material );
+		this.scene.add( this.mesh );
 
 		this.animate();
+
+	}
+
+	render() {
+
+		super.animate();
+
+	}
+
+	animate() {
+
+		this.render();
 
 	}
 
