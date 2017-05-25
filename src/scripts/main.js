@@ -1,98 +1,112 @@
 import * as THREE from 'three';
 import AbstractApplication from 'scripts/views/AbstractApplication';
 const glslify = require( 'glslify' );
-const bufferVert = glslify( './../shaders/bufferA.vert' );
 const bufferFrag = glslify( './../shaders/bufferA.frag' );
-const imageVert = glslify( './../shaders/image.vert' );
 const imageFrag = glslify( './../shaders/image.frag' );
-const testFrag = glslify( './../shaders/test.frag' );
 
-class Main extends AbstractApplication {
+function Main()  {
+	var scene;
+	var camera;
+	var renderer;
 
-	constructor() {
+	function sceneSetup() {
+		//This is the basic scene setup
+		scene = new THREE.Scene();
+		var width = window.innerWidth;
+		var height = window.innerHeight;
+		//Note that we're using an orthographic camera here rather than a prespective
+		camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
+		camera.position.z = 2;
 
-		super();
+		renderer = new THREE.WebGLRenderer();
+		renderer.setSize( window.innerWidth, window.innerHeight );
+		document.body.appendChild( renderer.domElement );
+	}
 
-		let geometry = new THREE.PlaneBufferGeometry( 2, 2 );
-		this.startTime = Date.now();
+	var bufferScene;
+	var textureA;
+	var textureB;
+	var bufferMaterial;
+	var plane;
+	var bufferObject;
+	var finalMaterial;
+	var quad;
 
+	function bufferTextureSetup(){
 		let video = document.getElementById( 'video' );
 		let texture = new THREE.VideoTexture( video );
 
 		texture.minFilter = THREE.LinearFilter;
 		texture.magFilter = THREE.LinearFilter;
 		texture.format = THREE.RGBFormat;
+		//Create buffer scene
+		bufferScene = new THREE.Scene();
+		//Create 2 buffer textures
+		textureA = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
+		textureB = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
+		//Pass textureA to shader
 
-		this.bufferMaterial = new THREE.ShaderMaterial( {
-			uniforms: this.buildUniforms( { u_buffer: { type: 't', value: this.bufferTextureA }, smokeSource: {type:"v3",value:new THREE.Vector3(0,0,0) } 
-			} ),
-			vertexShader: bufferVert,
+		bufferMaterial = new THREE.ShaderMaterial( {
+			uniforms: {
+				u_tex: { type: "t", value: texture },
+				bufferTexture: { type: "t", value: textureA },
+				u_resolution : {type: 'v2',value:new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
+				u_time: {type:"f",value:Math.random()*Math.PI*2+Math.PI}
+			},
+			fragmentShader: bufferFrag
+		} );
 
-			fragmentShader: testFrag,
-		}
-		);
-		this.finalMaterial = new THREE.MeshBasicMaterial({map: this.bufferTextureB});
+		plane = new THREE.PlaneBufferGeometry( window.innerWidth, window.innerHeight );
+		bufferObject = new THREE.Mesh( plane, bufferMaterial );
+		bufferScene.add(bufferObject);
 
-		//let imageMaterial = new THREE.ShaderMaterial( {
-			//uniforms: this.buildUniforms( { u_buffer: { type: 't', value: this.bufferTextureA.texture } } ),
-			//vertexShader: imageVert,
-
-			//fragmentShader: testFrag,
-		//} );
-
-		this.bufferMesh = new THREE.Mesh( geometry, this.bufferMaterial );
-		this.bufferScene.add( this.bufferMesh );
-
-		this.mesh = new THREE.Mesh( geometry, this.finalMaterial );
-		this.scene.add( this.mesh );
-		 //Send position of smoke source with value
-        var mouseDown = false;
-
-        function UpdateMousePosition(event){
-			var X = event.clientX;
-			var Y = event.clientY;
-            var mouseX = X;
-            var mouseY = window.innerHeight - Y;
-            this.bufferMaterial.uniforms.smokeSource.value.x = mouseX;
-            this.bufferMaterial.uniforms.smokeSource.value.y = mouseY;
-        }
-
-		function UpdateMouseDown(event) {
-            mouseDown = true;
-            this.bufferMaterial.uniforms.smokeSource.value.z = 0.1;
-		}
-
-        document.onmousemove = UpdateMousePosition.bind(this);
-
-        document.onmousedown = UpdateMouseDown.bind(this);
-
-        document.onmouseup = function(event){
-            mouseDown = false;
-            this.bufferMaterial.uniforms.smokeSource.value.z = 0;
-        }.bind(this)
-
-		this.animate();
-
+		finalMaterial = new THREE.ShaderMaterial( {
+			uniforms: {
+			 bufferTexture: { type: "t", value: textureB },
+			 u_resolution : {type: 'v2',value:new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
+			 u_time: {type:"f",value:Math.random()*Math.PI*2+Math.PI}
+			},
+			fragmentShader: imageFrag
+		} );
+		//Draw textureB to screen 
+		quad = new THREE.Mesh( plane, finalMaterial );
+		scene.add(quad);
 	}
 
-	buildUniforms( props ) {
+	//Initialize the Threejs scene
+	sceneSetup();
 
-		return Object.assign( props, this.uniforms );
+	//Setup the frame buffer/texture we're going to be rendering to instead of the screen
+	bufferTextureSetup();
 
+	
+
+	//Render everything!
+	function render() {
+
+	  requestAnimationFrame( render );
+
+	  //Draw to textureB
+	  renderer.render( bufferScene, camera, textureB, true );
+		
+	  //Swap textureA and B
+	  var t = textureA;
+	  textureA = textureB;
+	  textureB = t;
+
+	  quad.material.map = textureB;
+	  bufferMaterial.uniforms.bufferTexture.value = textureA;
+
+	  //Update time
+	  bufferMaterial.uniforms.u_time.value += 0.01;
+
+	  //Finally, draw to the screen
+	  renderer.render( scene, camera );
 	}
+	render();
 
-	prepareBuffers() {
 
-		this.mesh.material.map = this.bufferTextureB;
-		this.bufferMaterial.uniforms.u_buffer.value = this.bufferTextureA.texture;
 
-	}
-
-	animate() {
-
-		super.animate( this.prepareBuffers.bind( this ) );
-
-	}
 
 }
 

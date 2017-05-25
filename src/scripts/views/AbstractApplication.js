@@ -10,8 +10,8 @@ class AbstractApplication {
 			u_resolution: { type: "v2", value: new THREE.Vector2() },
 		};
 
-		this._camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
-		this._camera.position.z = 400;
+		this._camera = new THREE.OrthographicCamera( window.innerWidth / - 2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / - 2, 1, 1000 );
+		this._camera.position.z = 2;
 
 		this._scene = new THREE.Scene();
 
@@ -20,6 +20,10 @@ class AbstractApplication {
 		this._renderer.setSize( window.innerWidth, window.innerHeight );
 		this._uniforms.u_resolution.value.x = this._renderer.domElement.width;
 		this._uniforms.u_resolution.value.y = this._renderer.domElement.height;
+		this._bufferScene = new THREE.Scene();
+		this._bufferTextureA = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter } );
+		this._bufferTextureB = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter } );
+
 
 		document.body.appendChild( this._renderer.domElement );
 
@@ -52,6 +56,25 @@ class AbstractApplication {
 
 	}
 
+	get bufferTextureA() {
+
+		return this._bufferTextureA;
+
+	}
+
+	get bufferTextureB() {
+
+		return this._bufferTextureB;
+
+	}
+
+	get bufferScene() {
+
+		return this._bufferScene;
+
+	}
+
+
 
 	onWindowResize() {
 
@@ -65,13 +88,23 @@ class AbstractApplication {
 
 	}
 
-	animate( timestamp ) {
+	animate( prepareBuffers ) {
 
 		requestAnimationFrame( this.animate.bind( this ) );
 
 		this._uniforms.u_time.value += 0.05;
 		this._controls.update();
+		this._renderer.render( this._bufferScene, this._camera, this._bufferTextureB, true );
+
+		 //swap buffers
+		var t = this._bufferTextureA;
+		this._bufferTextureA = this._bufferTextureB;
+		this._bufferTextureB = t;
+
+		prepareBuffers();
+
 		this._renderer.render( this._scene, this._camera );
+
 
 	}
 
