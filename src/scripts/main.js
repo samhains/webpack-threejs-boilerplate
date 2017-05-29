@@ -17,10 +17,6 @@ function Main() {
 	let finalMaterial;
 	let quad;
 
-	function initWebCam() {
-
-	}
-
 	function sceneSetup() {
 
 		//This is the basic scene setup
