@@ -17,6 +17,10 @@ function Main() {
 	let finalMaterial;
 	let quad;
 
+	function initWebCam() {
+
+	}
+
 	function sceneSetup() {
 
 		//This is the basic scene setup
@@ -38,12 +42,40 @@ function Main() {
 
 	}
 
-	function bufferTextureSetup() {
+	function setupWebCam() {
+
+		let width = window.innerWidth;
+		let height = window.innerHeight;
+
+		let constraints = { audio: false, video: { width: width, height: height } };
+		navigator.mediaDevices.getUserMedia( constraints )
+			.then( function ( mediaStream ) {
+
+				video.srcObject = mediaStream;
+				video.onloadedmetadata = () => {
+
+					video.play();
+
+				};
+
+			} )
+			.catch( ( err ) => console.log( err.name + ": " + err.message ) );
+
+	}
+
+	function bufferTextureSetup( webCam = true ) {
 
 		let width = window.innerWidth;
 		let height = window.innerHeight;
 
 		let video = document.getElementById( 'video' );
+
+		if ( webCam ) {
+
+			setupWebCam();
+
+		}
+
 		let videoTexture = new THREE.VideoTexture( video );
 
 		videoTexture.minFilter = THREE.LinearFilter;
