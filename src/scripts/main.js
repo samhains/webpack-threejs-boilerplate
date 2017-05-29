@@ -5,34 +5,34 @@ const imageFrag = glslify( './../shaders/image.frag' );
 
 function Main() {
 
-	var scene;
-	var camera;
-	var renderer;
-	var bufferScene;
-	var textureA;
-	var textureB;
-	var bufferMaterial;
-	var plane;
-	var bufferObject;
-	var finalMaterial;
-	var quad;
+	let scene;
+	let camera;
+	let renderer;
+	let bufferScene;
+	let textureA;
+	let textureB;
+	let bufferMaterial;
+	let plane;
+	let bufferObject;
+	let finalMaterial;
+	let quad;
 
 	function sceneSetup() {
 
 		//This is the basic scene setup
 		scene = new THREE.Scene();
-		var width = window.innerWidth;
-		var height = window.innerHeight;
+		let width = window.innerWidth;
+		let height = window.innerHeight;
 		//Note that we're using an orthographic camera here rather than a prespective
 		camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, - 1, 1000 );
 
 		renderer = new THREE.WebGLRenderer();
 		renderer.setSize( width, height );
+
 		document.body.appendChild( renderer.domElement );
 		plane = new THREE.PlaneBufferGeometry( width, height );
 		bufferObject = new THREE.Mesh( plane, bufferMaterial );
 		bufferScene.add( bufferObject );
-		//Draw textureB to screen
 		quad = new THREE.Mesh( plane, finalMaterial );
 		scene.add( quad );
 
@@ -77,11 +77,6 @@ function Main() {
 	}
 
 
-	bufferTextureSetup();
-
-	sceneSetup();
-
-
 	function render() {
 
 	  requestAnimationFrame( render );
@@ -90,11 +85,11 @@ function Main() {
 	  renderer.render( bufferScene, camera, textureB );
 
 	  //Swap textureA and B
-	  var t = textureA;
+	  let t = textureA;
 	  textureA = textureB;
 	  textureB = t;
 
-	  quad.material.map = textureB;
+	  //quad.material.map = textureB;
 	  bufferMaterial.uniforms.iChannel1.value = textureA;
 
 	  //Update time
@@ -105,6 +100,10 @@ function Main() {
 	  renderer.render( scene, camera );
 
 	}
+
+	bufferTextureSetup();
+
+	sceneSetup();
 
 	render();
 
