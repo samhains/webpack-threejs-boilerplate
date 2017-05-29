@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import AbstractApplication from 'scripts/views/AbstractApplication';
+//import AbstractApplication from 'scripts/views/AbstractApplication';
 const glslify = require( 'glslify' );
 const bufferFrag = glslify( './../shaders/bufferA.frag' );
 const imageFrag = glslify( './../shaders/image.frag' );
@@ -15,11 +15,10 @@ function Main()  {
 		var width = window.innerWidth;
 		var height = window.innerHeight;
 		//Note that we're using an orthographic camera here rather than a prespective
-		camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
-		camera.position.z = 2;
+		camera = new THREE.OrthographicCamera(width/-2, width/2,  height/2, height/-2, -10000, 10000);
 
 		renderer = new THREE.WebGLRenderer();
-		renderer.setSize( window.innerWidth, window.innerHeight );
+		renderer.setSize( width, height );
 		document.body.appendChild( renderer.domElement );
 	}
 
@@ -34,24 +33,25 @@ function Main()  {
 
 	function bufferTextureSetup(){
 		let video = document.getElementById( 'video' );
-		let texture = new THREE.VideoTexture( video );
+		let videoTexture = new THREE.VideoTexture( video );
 
-		texture.minFilter = THREE.LinearFilter;
-		texture.magFilter = THREE.LinearFilter;
-		texture.format = THREE.RGBFormat;
+		videoTexture.minFilter = THREE.LinearFilter;
+		videoTexture.magFilter = THREE.LinearFilter;
+		videoTexture.format = THREE.RGBFormat;
 		//Create buffer scene
 		bufferScene = new THREE.Scene();
 		//Create 2 buffer textures
-		textureA = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
-		textureB = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter} );
+		console.log(window.innerWidth, window.innerHeight);
+		textureA = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter});
+		textureB = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter} );
 		//Pass textureA to shader
 
 		bufferMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
-				u_tex: { type: "t", value: texture },
-				bufferTexture: { type: "t", value: textureA },
-				u_resolution : {type: 'v2',value:new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
-				u_time: {type:"f",value:Math.random()*Math.PI*2+Math.PI}
+				iChannel0: { type: "t", value: videoTexture },
+				iChannel1: { type: "t", value: textureA },
+				iResolution : {type: 'v2', value: new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
+				iGlobalTime: {type:"f",value:0.0}
 			},
 			fragmentShader: bufferFrag
 		} );
@@ -62,9 +62,10 @@ function Main()  {
 
 		finalMaterial = new THREE.ShaderMaterial( {
 			uniforms: {
-			 bufferTexture: { type: "t", value: textureB },
-			 u_resolution : {type: 'v2',value:new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
-			 u_time: {type:"f",value:Math.random()*Math.PI*2+Math.PI}
+			 iChannel1: { type: "t", value: textureB },
+			 iResolution : {type: 'v2',value:new THREE.Vector2(window.innerWidth,window.innerHeight)},//Keeps the resolution
+			 iChannel0: { type: "t", value: videoTexture },
+			 iGlobalTime: {type:"f",value:0.0}
 			},
 			fragmentShader: imageFrag
 		} );
@@ -76,7 +77,7 @@ function Main()  {
 	//Initialize the Threejs scene
 	sceneSetup();
 
-	//Setup the frame buffer/texture we're going to be rendering to instead of the screen
+	//Setup the frame buffer/videoTexture we're going to be rendering to instead of the screen
 	bufferTextureSetup();
 
 	
@@ -87,7 +88,7 @@ function Main()  {
 	  requestAnimationFrame( render );
 
 	  //Draw to textureB
-	  renderer.render( bufferScene, camera, textureB, true );
+	  renderer.render( bufferScene, camera, textureB );
 		
 	  //Swap textureA and B
 	  var t = textureA;
@@ -95,10 +96,11 @@ function Main()  {
 	  textureB = t;
 
 	  quad.material.map = textureB;
-	  bufferMaterial.uniforms.bufferTexture.value = textureA;
+	  bufferMaterial.uniforms.iChannel1.value = textureA;
 
 	  //Update time
-	  bufferMaterial.uniforms.u_time.value += 0.01;
+	  quad.material.uniforms.iGlobalTime.value += 0.5;
+	  bufferMaterial.uniforms.iGlobalTime.value += 0.5;
 
 	  //Finally, draw to the screen
 	  renderer.render( scene, camera );
