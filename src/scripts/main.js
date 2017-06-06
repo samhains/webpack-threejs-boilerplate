@@ -1,141 +1,175 @@
 import * as THREE from 'three';
-const glslify = require( 'glslify' );
-const bufferFrag = glslify( './../shaders/bufferA.frag' );
-const imageFrag = glslify( './../shaders/image.frag' );
+import InputTexture from './InputTexture';
+import Poisson from './Poisson';
+
 
 function Main() {
 
-	let scene;
-	let camera;
-	let renderer;
-	let bufferScene;
-	let textureA;
-	let textureB;
-	let bufferMaterial;
-	let plane;
-	let bufferObject;
-	let finalMaterial;
-	let quad;
+var id;
+var container = document.getElementById("container");
+var renderer, scene, camera;
+var renderSize = new THREE.Vector2(0.0, 0.0);
+var uniforms;
+var poisson;
+var clock, time = 0.0;
+var debounceResize;
+var diffusion;
+var loader = new THREE.TextureLoader();
+loader.setPath("../textures/");
+var itemsLoaded = 0, totalAssetCount = 2;
+var inputTexture;
+var inputTexture_base;
 
-	function sceneSetup() {
-
-		//This is the basic scene setup
-		scene = new THREE.Scene();
-		let width = window.innerWidth;
-		let height = window.innerHeight;
-		//Note that we're using an orthographic camera here rather than a prespective
-		camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, - 1, 1000 );
-
-		renderer = new THREE.WebGLRenderer();
-		renderer.setSize( width, height );
-
-		document.body.appendChild( renderer.domElement );
-		plane = new THREE.PlaneBufferGeometry( width, height );
-		bufferObject = new THREE.Mesh( plane, bufferMaterial );
-		bufferScene.add( bufferObject );
-		quad = new THREE.Mesh( plane, finalMaterial );
-		scene.add( quad );
-
-	}
-
-	function setupWebCam() {
-
-		let width = window.innerWidth;
-		let height = window.innerHeight;
-
-		let constraints = { audio: false, video: { width: width, height: height } };
-		navigator.mediaDevices.getUserMedia( constraints )
-			.then( function ( mediaStream ) {
-
-				video.srcObject = mediaStream;
-				video.onloadedmetadata = () => {
-
-					video.play();
-
-				};
-
-			} )
-			.catch( ( err ) => console.log( err.name + ": " + err.message ) );
-
-	}
-
-	function bufferTextureSetup( webCam = true ) {
-
-		let width = window.innerWidth;
-		let height = window.innerHeight;
-
-		let video = document.getElementById( 'video' );
-
-		if ( webCam ) {
-
-			setupWebCam();
-
+var tex0 = loader.load("004_22a.jpg", loadCounter);
+var tex1 = loader.load("023_04a.jpg", loadCounter);
+	function loadCounter(){
+		itemsLoaded++;
+		if(itemsLoaded >= totalAssetCount){
+			init();
 		}
-
-		let videoTexture = new THREE.VideoTexture( video );
-
-		videoTexture.minFilter = THREE.LinearFilter;
-		videoTexture.magFilter = THREE.LinearFilter;
-		videoTexture.format = THREE.RGBFormat;
-		bufferScene = new THREE.Scene();
-		textureA = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter } );
-		textureB = new THREE.WebGLRenderTarget( width, height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter } );
-
-		bufferMaterial = new THREE.ShaderMaterial( {
-			uniforms: {
-				iChannel0: { value: videoTexture },
-				iChannel1: { value: textureA },
-				iResolution: { value: new THREE.Vector2( width, height ) },
-				iGlobalTime: { value: 0.0 }
-			},
-			fragmentShader: bufferFrag
-		} );
-
-		finalMaterial = new THREE.ShaderMaterial( {
-			uniforms: {
-			 iChannel1: { value: textureB },
-			 iResolution: { value: new THREE.Vector2( width, height ) },
-			 iChannel0: { value: videoTexture },
-			 iGlobalTime: { value: 0.0 }
-			},
-			fragmentShader: imageFrag
-		} );
-
-
 	}
 
+function init(){
+	setRenderSize();
+	initGraphics();
+	initUniforms();
+	initInputTexture();
+	initPoisson();
 
-	function render() {
+	debounceResize = debounce(onWindowResize, 250);
+    window.addEventListener("resize", debounceResize);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener('touchdown', onDocumentTouchStart, false);
+    document.addEventListener('touchmove', onDocumentTouchMove, false);
+	animate();
 
-	  requestAnimationFrame( render );
+}
 
-	  //Draw to textureB
-	  renderer.render( bufferScene, camera, textureB );
+function initGraphics(){
 
-	  //Swap textureA and B
-	  let t = textureA;
-	  textureA = textureB;
-	  textureB = t;
+	renderer = new THREE.WebGLRenderer({
+		preserveDrawingBuffer: true,
+		antialias: true,
+		alpha: true
+	});
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setSize(renderSize.x, renderSize.y);
+	renderer.setClearColor(0xffffff);
+	container.appendChild(renderer.domElement);
 
-	  //quad.material.map = textureB;
-	  bufferMaterial.uniforms.iChannel1.value = textureA;
+	scene = new THREE.Scene();
+	camera = new THREE.OrthographicCamera( renderSize.x / - 2, renderSize.x / 2, renderSize.y / 2, renderSize.y / - 2, -100000, 100000 );
 
-	  //Update time
-	  quad.material.uniforms.iGlobalTime.value += 0.5;
-	  bufferMaterial.uniforms.iGlobalTime.value += 0.5;
+	camera.position.z = 500;
 
-	  //Finally, draw to the screen
-	  renderer.render( scene, camera );
+	clock = new THREE.Clock();
 
+}
+function initUniforms(){
+	uniforms = {
+		"resolution": renderSize,
+		"mouse": new THREE.Vector2(0.0,0.0),
+		"time": 0.0,
+		"frame": 0,
+		"texture_resolution": new THREE.Vector2(3072.0/3.0, 2048.0/3.0)
 	}
+}
+function initInputTexture(){
 
-	bufferTextureSetup();
+	inputTexture = new InputTexture(tex0, renderer, renderSize, uniforms);
+	console.log('input', inputTexture)
+	inputTexture.init();
 
-	sceneSetup();
+	inputTexture_base = new InputTexture(tex1, renderer, renderSize);
+	inputTexture_base.init();
+}
+function initPoisson(){
+	poisson = new Poisson(renderer, renderSize, uniforms, tex0, tex1);
+	poisson.init();
+}
 
-	render();
+function animate(){
+	id = requestAnimationFrame(animate);
+	draw();
+}
+
+function draw(){
+
+	time += 0.05;
+	uniforms["time"] = time;
+	uniforms["frame"]++;
+
+	poisson.draw();
+
+	renderer.render(poisson.buffers[2].scene, poisson.camera);
+
+}
+
+function setRenderSize(){
+	renderSize = new THREE.Vector2(window.innerWidth, window.innerHeight);
+}
+
+function onWindowResize(event){
+    setRenderSize();
+    renderer.setSize(renderSize.x, renderSize.y);
+    uniforms["resolution"] = new THREE.Vector2(renderSize.x, renderSize.y);
+    camera.updateProjectionMatrix();
+}
+function debounce(func, wait, immediate) {
+    var timeout;
+    return function() {
+        var context = this, args = arguments;
+        var later = function() {
+            timeout = null;
+            if (!immediate) func.apply(context, args);
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) func.apply(context, args);
+    };
+}
 
 
+function onMouseMove(event) {
+	uniforms["mouse"].x = (event.pageX / renderSize.x) * 2 - 1;
+	uniforms["mouse"].y = -(event.pageY / renderSize.y) * 2 + 1;
+}
+function onDocumentTouchStart(event) {
+	// handleAudio();
+    updateMouse(event);
+}
+
+function onDocumentTouchMove(event) {
+	// handleAudio();
+    updateMouse(event);
+}
+
+function updateMouse(event) {
+    if (event.touches.length === 1) {
+        uniforms["mouse"].x = (event.touches[0].pageX / renderSize.x) * 2 - 1;
+        uniforms["mouse"].y = -(event.touches[0].pageY / renderSize.y) * 2 + 1;
+    }
+}
+function onMouseDown() {
+
+}
+
+function onDocumentTouchStart(event) {
+    updateMouse(event);
+}
+
+function onDocumentTouchMove(event) {
+    updateMouse(event);
+}
+
+function updateMouse(event) {
+    if (event.touches.length === 1) {
+        event.preventDefault();
+        uniforms["mouse"].x = (event.touches[0].pageX / renderSize.x) * 2 - 1;
+        uniforms["mouse"].y = -(event.touches[0].pageY / renderSize.y) * 2 + 1;
+    }
+}
 }
 
 export default Main;
