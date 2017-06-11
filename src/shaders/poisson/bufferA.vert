@@ -1,6 +1,5 @@
 varying vec2 vUv;
 varying vec3 vNormal;
-
 uniform sampler2D texture;
 uniform float time;
 

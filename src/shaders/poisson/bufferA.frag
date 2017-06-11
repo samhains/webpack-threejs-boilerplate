@@ -90,6 +90,7 @@ void main(){
         neighbors[6] = uv + vec2(-step_x, 0.0);
         neighbors[7] = uv + vec2(-step_x, step_y);
 
+
         for (int i = 0; i < NUM_NEIGHBORS; ++i) {
             vec2 q = neighbors[i];
             col += isMasked(q) ? RES(q) : BASE(q);

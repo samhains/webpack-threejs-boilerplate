@@ -7,27 +7,6 @@ uniform vec2 resolution;
 uniform vec2 mouse;
 uniform float time;
 uniform float frame;
-/**
- * Interactive Poisson Blending by Ruofei Du (DuRuofei.com)
- * Demo: https://www.shadertoy.com/view/4l3Xzl
- * Tech brief: http://blog.ruofeidu.com/interactive-poisson-blending/
- * starea @ ShaderToy,License Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
- * https://creativecommons.org/licenses/by-nc-sa/3.0/
- *
- * Reference:
- * [1] P. Pérez, M. Gangnet, A. Blake. Poisson image editing. ACM Transactions on Graphics (SIGGRAPH'03), 22(3):313-318, 2003.
- *
-oooo         * Created 12/6/2016
- * Update 4/5/2017:
- * [1] The iteration for each pixel will automatically stop after 100 iterations of Poisson blending.
- *
- * Bugs remaining:
- * [2] Edge effect, but it's kind'of cool right now.
- **/
-
-// the stroke and iterations mask
-// r for strokes
-// b for iterations
 #define BRUSH_SIZE 0.1
 #define INITIAL_CIRCLE_SIZE 0.4
 

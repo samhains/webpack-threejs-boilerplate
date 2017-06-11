@@ -46,15 +46,15 @@ function Poisson(renderer, renderSize, uniforms, tex0, tex1){
 function AShader(){
   this.uniforms = THREE.UniformsUtils.merge([
       {
-          "texture_a": { type: "t", value: null },
-          "texture_b": { type: "t", value: null },
-          "texture_base": { type: "t", value: null },
-          "texture_src": { type: "t", value: null },
-          "resolution": { type: "v2", value: null },
-          "texture_resolution": { type: "v2", value: null },
-          "mouse": { type: "v2", value: null },
-          "frame": { type: "f", value: 0.0 },
-          "time": { type: "f", value: 0.0 },
+          "texture_a": { value: null },
+          "texture_b": { value: null },
+          "texture_base": { value: null },
+          "texture_src": { value: null },
+          "resolution": { value: null },
+          "texture_resolution": { value: null },
+          "mouse": { value: null },
+          "frame": { value: 0.0 },
+          "time": { value: 0.0 },
       }
   ]);
 
@@ -68,13 +68,13 @@ function AShader(){
 function BShader(){
   this.uniforms = THREE.UniformsUtils.merge([
       {
-          "texture": { type: "t", value: null },
-          "texture_a": { type: "t", value: null },
-          "texture_b": { type: "t", value: null },
-          "resolution": { type: "v2", value: null },
-          "mouse": { type: "v2", value: null },
-          "frame": { type: "f", value: 0.0 },
-          "time": { type: "f", value: 0.0 },
+          "texture": { value: null },
+          "texture_a": { value: null },
+          "texture_b": { value: null },
+          "resolution": { value: null },
+          "mouse": { value: null },
+          "frame": { value: 0.0 },
+          "time": { value: 0.0 },
       }
   ]);
 
@@ -88,11 +88,11 @@ function BShader(){
 function ImageShader(){
     this.uniforms = THREE.UniformsUtils.merge([
         {
-            "texture": { type: "t", value: null },
-            "resolution": { type: "v2", value: null },
-            "mouse": { type: "v2", value: null },
-            "frame": { type: "f", value: 0.0 },
-            "time": { type: "f", value: 0.0 },
+            "texture": { value: null },
+            "resolution": { value: null },
+            "mouse": { value: null },
+            "frame": { value: 0.0 },
+            "time": { value: 0.0 },
         }
     ]);
 
